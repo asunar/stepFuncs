@@ -1,6 +1,14 @@
 {
-    "StartAt": "Check Applicant Data",
+    "StartAt": "Submit Application",
     "States": {
+        "Submit Application": {
+          "Type": "Task",
+          "Parameters": {
+            "application.$": "$.application"
+          },
+          "Resource": "${SubmitApplicationFunctionArn}",
+          "Next": "Check Applicant Data"
+        },
         "Check Applicant Data": {
             "Type": "Parallel",
             "Branches": [
@@ -86,43 +94,8 @@
             "Default": "Approve Application"
         },
         "Pending Review": {
-            "Type": "Task",
-            "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
-            "Parameters": {
-                "FunctionName": "${FlagApplicationFunctionName}",
-                "Payload": {
-                    "id.$": "$.application.id",
-                    "flagType": "REVIEW",
-                    "taskToken.$": "$$.Task.Token"
-                }
-            },
-            "ResultPath": "$.review",
-            "Retry": [
-                {
-                    "ErrorEquals": [
-                        "Lambda.ServiceException",
-                        "Lambda.AWSLambdaException",
-                        "Lambda.SdkClientException",
-                        "Lambda.TooManyRequestsException"
-                    ]
-                }
-            ],
-            "Next": "Review Approved?"
-        },
-        "Review Approved?": {
-            "Type": "Choice",
-            "Choices": [
-                {
-                    "Variable": "$.review.decision",
-                    "StringEquals": "APPROVE",
-                    "Next": "Approve Application"
-                },
-                {
-                    "Variable": "$.review.decision",
-                    "StringEquals": "REJECT",
-                    "Next": "Reject Application"
-                }
-            ]
+            "Type": "Pass",
+            "Next": "Reject Application"
         },
         "Reject Application": {
             "Type": "Task",

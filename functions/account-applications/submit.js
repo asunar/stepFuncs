@@ -30,8 +30,13 @@ module.exports.handler = async(event) => {
     let application
     try {
         application = await submitNewAccountApplication(event)
-        await startStateMachineExecution(application)
-        return application
+        //await startStateMachineExecution(application)
+        return {
+            "id": application.id,
+            "name": event.name,
+            "address": event.address,
+            "state": "SUBMITTED123"
+        };
     } catch (ex) {
         if (application !== undefined) {
             await AccountApplications.delete(application.id)
