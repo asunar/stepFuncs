@@ -6,6 +6,7 @@ Resources:
   ApplicationProcessingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
+      Type: EXPRESS
       DefinitionUri: statemachine/account-application-workflow.asl.json
       DefinitionSubstitutions:
         DataCheckingFunctionArn: !GetAtt DataCheckingFunction.Arn
