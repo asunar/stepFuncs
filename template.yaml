@@ -6,12 +6,14 @@ Resources:
   ApplicationProcessingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
+      Type: EXPRESS
       DefinitionUri: statemachine/account-application-workflow.asl.json
       DefinitionSubstitutions:
         DataCheckingFunctionArn: !GetAtt DataCheckingFunction.Arn
         FlagApplicationFunctionName: !Ref FlagApplicationFunction
         ApproveApplicationFunctionArn: !GetAtt ApproveApplicationFunction.Arn
         RejectApplicationFunctionArn: !GetAtt RejectApplicationFunction.Arn
+        SubmitApplicationFunctionArn: !GetAtt SubmitApplicationFunction.Arn
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref DataCheckingFunction
@@ -21,6 +23,8 @@ Resources:
             FunctionName: !Ref ApproveApplicationFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref RejectApplicationFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref SubmitApplicationFunction
 
   ApproveApplicationFunction:
     Type: AWS::Serverless::Function
@@ -117,12 +121,9 @@ Resources:
       Environment:
         Variables:
           APPLICATIONS_TABLE_NAME: !Ref ApplicationsTable
-          APPLICATION_PROCESSING_STEP_FUNCTION_ARN: !Ref ApplicationProcessingStateMachine
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ApplicationsTable
-        - StepFunctionsExecutionPolicy:
-            StateMachineName: !GetAtt ApplicationProcessingStateMachine.Name
 
   ApplicationsTable:
     Type: 'AWS::DynamoDB::Table'
@@ -149,6 +150,43 @@ Resources:
                       KeyType: HASH
               Projection:
                   ProjectionType: ALL
+##########################################################################
+#   HTTP API                                                             #
+##########################################################################
+
+  HttpApiforSyncWF:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefinitionBody:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: 'api.yaml'
+
+##########################################################################
+#   Roles                                                               #
+##########################################################################
+  HttpApiRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - apigateway.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+      - PolicyName: AllowSFNExec
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: "states:StartSyncExecution"
+              Resource: !GetAtt ApplicationProcessingStateMachine.Arn
+
 Outputs:
   SubmitApplicationFunctionArn:
     Description: "Submit Application Function ARN"

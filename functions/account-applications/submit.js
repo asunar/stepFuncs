@@ -30,8 +30,16 @@ module.exports.handler = async(event) => {
     let application
     try {
         application = await submitNewAccountApplication(event)
-        await startStateMachineExecution(application)
-        return application
+        //Synchronous Express workflows do not support waiting for task tokens.
+        //return await startStateMachineExecution(application)
+        return {
+            "application": {
+                "id": application.id,
+                "name": event.application.name,
+                "address": event.application.address,
+                "state": application.state,
+            }
+        }
     } catch (ex) {
         if (application !== undefined) {
             await AccountApplications.delete(application.id)

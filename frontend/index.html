@@ -1,0 +1,48 @@
+<html>
+    <body>
+        <h2>Account Application</h2>
+        <label>Name:</label>
+        <input id="name" type="text" />
+        <br />
+        <label>Address:</label>
+        <input id="address" type="text" />
+        <br />
+        <button type="submit" onclick="submit();">Submit</button>
+
+        <br />
+        <br />
+        <label>Result:</label>
+        <span id="result"></span> 
+
+    </body>
+
+    <script>
+        function submit(){
+
+            const name = document.getElementById("name").value;
+            const address = document.getElementById("address").value;
+            fetch("https://no0vun3wl0.execute-api.us-west-1.amazonaws.com", { 
+
+            // Adding method type 
+            method: "POST", 
+            // Adding body or contents to send 
+            body: JSON.stringify({"application":{ "name": name,"address": address}}), 
+
+            // Adding headers to the request 
+            headers: { 
+            "Content-type": "application/json; charset=UTF-8"
+            } 
+        }) 
+
+        // Converting to JSON 
+        .then(response => response.json()) 
+
+        // Displaying results to console 
+        .then(json => {
+            console.log(json)
+            document.getElementById("result").innerText = JSON.parse(json.output).state;
+        });             
+
+        }
+    </script>
+</html>
